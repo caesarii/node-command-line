@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const { readFile } = require('fs/promises')
 const yargs = require('yargs/yargs')
 

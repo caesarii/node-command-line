@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "yargs": "^17.7.2"
+  },
+  "bin": {
+    "parse-json": "./parse-json.js"
   }
 }
