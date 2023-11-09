@@ -1,5 +1,6 @@
 const net = require("net");
 const assert = require("assert");
+const fs = require('fs')
 
 const log = console.log;
 
@@ -13,12 +14,18 @@ const config = {
 };
 
 const CommandType = {
+  // SMTP
   EHLO: "EHLO",
   AUTH_LOGIN: "AUTH LOGIN",
   MAIL_FROM: "MAIL FROM",
   RCPT_TO: "RCPT TO",
   DATA: "DATA",
   QUIT: "QUIT",
+  // pop3
+  USER: 'USER', 
+  PASS: 'PASS',
+  STAT: 'STAT',
+  RETR: 'RETR'
 };
 
 function toBase64(str) {
@@ -33,7 +40,9 @@ class SMTP {
     this.socket = null
     this.sendCommand = this.sendCommand.bind(this)
     this.sendMailContent = this.sendMailContent.bind(this)
-    this.getData = this.getStatus.bind(this)
+    this.getStatus = this.getStatus.bind(this)
+    this.send =  this.send.bind(this)
+    this.receive = this.receive.bind(this)
   }
 
   createConnect(host, port) {
@@ -55,45 +64,45 @@ class SMTP {
       // getStatus 会重复调用, 这里用 once
       socket.once("data", function (res) {
         log("response:", res.toString());
-        const statusCode = res.slice(0, 3);
-        resolve(statusCode, res);
+        const code = res.slice(0, 3);
+        resolve({ code, response: res });
       });
     });
   }
 
   async send() {
-    const { sendCommand, sendMailContent, getStatus: getData } = this
+    const { sendCommand, sendMailContent, getStatus: getStatus } = this
 
-    let code = await getData();
-    assert(code === "220");
+    let res = await getStatus();
+    assert(res.code === "220");
     sendCommand(`${CommandType.EHLO} Heqy`);
   
-    code = await this.getStatus();
-    assert(code === "250");
+    res = await this.getStatus();
+    assert(res.code === "250");
     sendCommand(CommandType.AUTH_LOGIN);
   
-    code = await this.getStatus();
-    assert(code === "334");
+    res = await this.getStatus();
+    assert(res.code === "334");
     sendCommand(toBase64(config.fromAddress));
   
-    code = await this.getStatus();
-    assert(code === "334");
+    res = await this.getStatus();
+    assert(res.code === "334");
     sendCommand(toBase64(config.authcode));
   
-    code = await this.getStatus();
-    assert(code === "235");
+    res = await this.getStatus();
+    assert(res.code === "235");
     sendCommand(`${CommandType.MAIL_FROM}:<${config.fromAddress}>`);
   
-    code = await this.getStatus();
-    assert(code === "250");
+    res = await this.getStatus();
+    assert(res.code === "250");
     sendCommand(`${CommandType.RCPT_TO}:<${config.toAddress}>`);
   
-    code = await this.getStatus();
-    assert(code === "250");
+    res = await this.getStatus();
+    assert(res.code === "250");
     sendCommand(CommandType.DATA);
   
-    code = await this.getStatus();
-    assert(code === "354");
+    res = await this.getStatus();
+    assert(res.code === "354");
     sendMailContent(
       config.subject,
       config.fromAddress,
@@ -101,8 +110,8 @@ class SMTP {
       "hello world"
     );
   
-    code = await this.getStatus();
-    assert(code === "250");
+    res = await this.getStatus();
+    assert(res.code === "250");
     sendCommand(CommandType.QUIT);
   }
 
@@ -115,12 +124,49 @@ class SMTP {
       `SUBJECT:${subject}\r\nFROM:${fromAddress}\r\nTO:${toAddress}\r\n\r\n${text}\r\n.\r\n`
     );
   }
+
+
+  async receive() {
+    const { sendCommand, sendMailContent, getStatus } = this
+
+    let res = await getStatus();
+    assert(res.code === "+OK");
+    sendCommand(`USER ${config.fromAddress}`);
+
+    
+    res = await getStatus();
+    assert(res.code === "+OK");
+    sendCommand(`PASS ${config.authcode}`);
+
+   
+    res = await getStatus();
+    assert(res.code === "+OK");
+    sendCommand(`STAT`);
+
+    res = await getStatus();
+    assert(res.code === "+OK");
+    sendCommand(`RETR 6`);
+
+    const { response } = await getStatus();
+    this.saveMail(response)
+  }
+
+  saveMail(reponse) {
+    fs.writeFile('./mail.html', reponse, function() {
+      log('save mail succeed')
+    })
+  }
 }
 
 async function __main() {
   const smtp = new SMTP()
-  await smtp.createConnect(config.host, config.port)
-  await smtp.send();
+  // 发送邮件
+  // await smtp.createConnect(config.host, config.port)
+  // await smtp.send();
+
+  // 接收邮件
+  await smtp.createConnect('pop.163.com','110')
+  await smtp.receive()
 }
 
 __main();

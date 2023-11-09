@@ -7,6 +7,8 @@ https://codeleading.com/article/909980918/
 
 https://cloud.tencent.com/developer/article/2067473
 
+https://www.ietf.org/rfc/rfc1939.txt
+
 响应状态码
 
 SMTP响应代码列表可用于帮助快速确定为什么电子邮件被退回，或者为什么在发送电子邮件时收到SMTP错误。
