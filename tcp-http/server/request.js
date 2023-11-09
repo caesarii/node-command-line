@@ -1,5 +1,5 @@
 // Request: 保存请求相关的信息
-const {log} = require('./utils')
+const {log} = require('../utils')
 // 解析 path
 const parsedPath = (path) => {
     // 是否包含 query
