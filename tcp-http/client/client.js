@@ -1,6 +1,8 @@
 const net = require('net')
 const fs = require('fs')
 
+const Request = require('./request')
+
 const log = console.log
 
 
@@ -44,15 +46,14 @@ class HttpClient {
     
     const socket = net.connect(port, host)
 
-
     socket.setEncoding('utf8')
 
     socket.on('connect', function() {
       log('connect succeed')
 
-      process.stdin.pipe(socket)
-      socket.pipe(process.stdout)
-      process.stdin.resume()
+      const req = new Request()
+
+      socket.write(req.get('/'))
     })
 
     socket.on('data', function(data) {
@@ -60,7 +61,7 @@ class HttpClient {
       log('response', data)
 
       // TODO: 解析响应
-      fs.writeFileSync(`./response/${url}.txt`, data.toString())
+      fs.writeFileSync(`${__dirname}/response/res.txt`, data.toString())
     })
   }
 }
