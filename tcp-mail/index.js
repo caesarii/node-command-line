@@ -13,7 +13,7 @@ const config = {
 };
 
 const CommandType = {
-  HELO: "HELO",
+  EHLO: "EHLO",
   AUTH_LOGIN: "AUTH LOGIN",
   MAIL_FROM: "MAIL FROM",
   RCPT_TO: "RCPT TO",
@@ -66,7 +66,7 @@ class SMTP {
 
     let code = await getData();
     assert(code === "220");
-    sendCommand(`${CommandType.HELO} Heqy`);
+    sendCommand(`${CommandType.EHLO} Heqy`);
   
     code = await this.getStatus();
     assert(code === "250");
