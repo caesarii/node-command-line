@@ -1,27 +1,75 @@
 const net = require('net')
-
-const socket = net.connect(3000, '127.0.0.1')
+const fs = require('fs')
 
 const log = console.log
 
-socket.setEncoding('utf8')
 
-socket.on('connect', function() {
-  log('connect succeed')
+class Url {
+  constructor(url) {
+    this.url = url
+    this.protocol = ''
+    this.host = ''
+    this.port = ''
+    this.parseUrl(url)
+  }
 
-  process.stdin.pipe(socket)
-  socket.pipe(process.stdout)
-  process.stdin.resume()
-})
+  parseUrl(url) {
+    // http://12y.0.0.1:3000/path?a=b&c=d#xxx
+    const [protocol, rest1] = url.split('://')
+    const [host, rest2 = ''] = rest1.split(':')
+    const [port, rest3 = ''] = rest2.split('/')
+    const [path, rest4 = ''] = rest3.split('?')
+    const [query, hash = ''] = rest4.split('#')
+    log({ protocol, host, port, path, query, hash })
 
-// 通过data事件手动读取或写入数据,等价于上面两个pipe
-// socket.on('data', function(data) {
-//   process.stdout.write(data)
-// })
-// process.stdin.on('data', function(data) {
-//   socket.write(data)
-// })
+    Object.assign(this, { protocol, host, port })
+  }
+}
+
 
 class HttpClient {
-  
+  constructor() {
+
+  }
+
+  request(url, options = {}) {
+
+    // TODO: 客户端功能扩展
+    const { method, cookie } = options
+
+    const parsedUrl = new Url(url)
+
+    log('parsedUrl', parsedUrl)
+    const { port, host } = parsedUrl
+    
+    const socket = net.connect(port, host)
+
+
+    socket.setEncoding('utf8')
+
+    socket.on('connect', function() {
+      log('connect succeed')
+
+      process.stdin.pipe(socket)
+      socket.pipe(process.stdout)
+      process.stdin.resume()
+    })
+
+    socket.on('data', function(data) {
+
+      log('response', data)
+
+      // TODO: 解析响应
+      fs.writeFileSync(`./response/${url}.txt`, data.toString())
+    })
+  }
 }
+
+
+function __main() {
+
+  const c = new HttpClient()
+  c.request('http://127.0.0.1:3000/')
+}
+
+__main()

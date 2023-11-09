@@ -23,13 +23,13 @@ class HttpServer {
         })
         
         server.on('connection', (socket) => {
+            log('server:new connection')
             // 接收数据
             socket.on('data', (data) => {
                 const raw = data.toString('utf8')
                 
                 const response = this.responseFor(raw)
                 socket.write(response)
-                
                 socket.destroy()
             })
         })

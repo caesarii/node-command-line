@@ -1,0 +1,16 @@
+{
+  "name": "tcp-http",
+  "version": "1.0.0",
+  "description": "基于 TCP 实现 HTTP 协议",
+  "main": "utils.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "node ./server/app.js",
+    "client": "node ./client/client"
+  },
+  "author": "",
+  "license": "ISC"
+}

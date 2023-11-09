@@ -1,9 +1,9 @@
 
 
-const NodeNet = require('../server')
+const HttpServer = require('./server')
 const log = console.log
 
-const app = new NodeNet()
+const app = new HttpServer()
 
 // TODO 一次配置所有静态资源
 const resources = (req, res) => {
@@ -18,4 +18,4 @@ const index = (req, res) => {
 
 app.use('/', index)
 app.use('/static', resources)
-app.listen('0.0.0.0', 3000)
+app.listen('127.0.0.1', 3000)

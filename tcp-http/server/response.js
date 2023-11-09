@@ -12,7 +12,8 @@ class Response {
             encoding: 'utf8'
         }
         
-        const content = fs.readFileSync(path, options)
+        console.log('read file', `${__dirname}/${path}`)
+        const content = fs.readFileSync(`${__dirname}/${path}`, options)
         return content
     }
     
