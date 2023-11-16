@@ -42,6 +42,10 @@ function __main() {
 
   const file = parsedArgs.f
 
+  if (!file) {
+    log('-f 参数是必须的')
+  }
+
   // 从命令行接受参数
   const stdin = process.stdin
   if (file === '-') {
