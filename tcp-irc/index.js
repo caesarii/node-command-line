@@ -2,68 +2,107 @@ const net = require('net')
 
 const log = console.log
 
-let count = 0
-let users = {}
 const Mode = {
   LOGIN: 'LOGIN',
   CHAT: 'CHAT'
 }
-let currentMode = Mode.CHAT
 
-const server = net.createServer(function(socket) {
-  log('new connection')
-  socket.write(`
-    welcome to node-caht!
-    ${count} other people are connected at this time.
-    please choose your mode: LOGIN | CHAT \n`)
-  count ++
+class User {
+  constructor(name, socket, token) {
+    this.name = name
+    this.socket = socket
+    this.token = token
+  }
+}
 
-  socket.setEncoding('utf8')
-  
-  socket.on('data', function(data) {
+
+class TcpServer {
+  constructor() {
+    this.server = this.createServer()
+    this.socket = null
+    this.count = 0
+    this.mode = Mode.LOGIN
+    this.users = {}
+    this.sendMessage = this.sendMessage.bind(this)
+  }
+
+
+  sendMessage(msg) {
+    this.socket.write(`${msg} \r\n`)
+  }
+
+  createServer() {
+    const self = this
+    function dataHandler(data) {
+      const input = data.replace(/\n|\r\n/g, '')
     
-
-    const input = data.replace(/\n|\r\n/g, '')
-    log('server data', input, input === Mode.LOGIN)
-    if(input === Mode.LOGIN) {
-      log('enter login')
-      currentMode = Mode.LOGIN
-      socket.write(`please enter your nickname. \n`)
-      return
-    } 
-    if(input === Mode.CHAT) {
-      currentMode = Mode.CHAT
-      socket.write(`please start your chat. \n`)
-      return 
-    }
-
-    if(currentMode === Mode.LOGIN) {
-      if (users[input]) {
-        socket.write(`nickname ${input} already in use. try again. \n`)
+      if(input === Mode.LOGIN) {
+        self.mode = Mode.LOGIN
+        self.sendMessage(`please enter your nickname.`)
         return
-      } else {
-        users[input] = socket
-        for (let u in users) {
-          users[u].write(`${input} joined th room. \n`)
-        }
-        socket.write(`login succeed! start chat. \n`)
-        currentMode = Mode.CHAT
+      } 
+      if(input === Mode.CHAT) {
+        self.mode = Mode.CHAT
+        socket.write(`please start your chat.`)
+        return 
       }
-    } else if(currentMode === Mode.CHAT) {
-      // 默认当做聊天
-      for (let u in users) {
-        users[u].write(`someone said: ${input}. \n`)
+  
+      if(self.mode === Mode.LOGIN) {
+        if (self.users[input]) {
+          self.sendMessage(`nickname ${input} already in use. try again. \n`)
+          return
+        } else {
+          self.users[input] = self.socket
+          for (let u in self.users) {
+            self.users[u].write(`${input} joined th room. \n`)
+          }
+          self.socket.write(`login succeed! start chat. \n`)
+          self.mode = Mode.CHAT
+        }
+      } else if(self.mode === Mode.CHAT) {
+        // 默认当做聊天
+        for (let u in self.users) {
+          self.users[u].write(`someone said: ${input}. \n`)
+        }
       }
     }
-  })
 
-  socket.on('close', function () {
-    count --
-    log('someone leave')
-  })
-})
+    function connectHandler(socket) {
+      self.socket = socket
+
+      socket.write(`
+        welcome to node-caht!
+        ${this.count} other people are connected at this time.
+        please choose your action: LOGIN | CHAT \n`)
+      this.count ++
+    
+      socket.setEncoding('utf8')
+      
+      socket.on('data', dataHandler)
+
+      socket.on('close', function () {
+        this.count --
+        log('someone leave')
+      })
+    }
+    return net.createServer(connectHandler)
+}
+
+  start() {
+    this.server.listen(3000, function () {
+      log('server listenning on *:3000')
+    })
+  }
 
 
-server.listen(3000, function () {
-  log('server listenning on *:3000')
-})
+  
+}
+
+function __main() {
+  const server = new TcpServer()
+  server.start()
+}
+
+__main()
+
+
