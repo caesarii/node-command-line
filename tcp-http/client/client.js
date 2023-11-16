@@ -60,7 +60,7 @@ class HttpClient {
 
       log('response', data)
 
-      // TODO: 解析响应
+      // TODO: Response
       fs.writeFileSync(`${__dirname}/response/res.txt`, data.toString())
     })
   }
