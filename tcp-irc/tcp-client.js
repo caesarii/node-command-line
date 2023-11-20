@@ -6,7 +6,7 @@ const log = console.log
 class Client {
   constructor() {
     this.socket = this.connect()
-    this.name = 'Anonymous'
+    this.name = ''
   }
 
   connect() {
@@ -19,17 +19,21 @@ class Client {
       log('connect succeed')
 
       socket.on('data', function(data) {
-        const [ msg, name ] = data.split('##')
-        if (name && self.name.startsWith('Anonymous')) {
-          self.name = name
+        let msg = data
+        if(data.includes('##')) {
+          let [name, _msg] = data.split('##')
+          msg = _msg
+          if (name) {
+            self.name = name
+          }
         }
         process.stdout.write(msg)
-        process.stdin.resume()
       })
-      process.stdin.on('data', function(data) {
-        // log('name', self.name)
-        socket.write(`${data}##${self.name}`)
-      })
+
+    })
+
+    process.stdin.on('data', function(data) {
+      socket.write(`${self.name}##${data}\r\n`)
     })
 
     return socket

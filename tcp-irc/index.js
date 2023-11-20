@@ -15,30 +15,38 @@ class User {
 }
 
 class Connection {
-  constructor(socket, user) {
+  constructor(socket, user = null) {
     this.socket = socket
     this.user = user
     this.sendMessage = this.sendMessage.bind(this)
   }
 
   sendMessage(msg) {
-    this.socket.write(`${msg} \r\n`)
+    try {
+     this.socket && this.socket.write(`${msg} \r\n`)
+    } catch(e) {
+      console.error('send message failed', e)
+    }
   }
 }
 
 class TcpServer {
   constructor() {
     this.server = this.createServer()
-    this.mode = Mode.LOGIN
     this.users = {}
     this.connections = {}
   }
 
-  broadcast(msg) {
+  broadcast(msg, name) {
     const self = this
     Object.keys(self.connections).forEach(u => {
       const conn = self.connections[u]
-      conn.sendMessage(`${conn.user.name} said: ${msg} \r\n`)
+
+      // 广播不包含当前用户
+      if (conn.user.name !== name) {
+        conn.sendMessage(msg)
+      }
+
     })
   }
 
@@ -46,52 +54,38 @@ class TcpServer {
     const self = this
     function dataHandler(data, conn) {
       const input = data.replace(/\n|\r\n/g, '')
-      const [ msg, name ] = input.split('##')
-      log('##', msg, name)
-    
-      if(msg === Mode.LOGIN) {
-        self.mode = Mode.LOGIN
-        conn.sendMessage(`please enter your nickname.`)
-        return
-      } 
-      if(msg === Mode.CHAT) {
-        self.mode = Mode.CHAT
-        conn.sendMessage(`please start your chat.`)
-        return 
-      }
-  
-      if(self.mode === Mode.LOGIN) {
-        if (self.users[msg]) {
-          conn.sendMessage(`nickname ${msg} already in use. try again. \n`)
+      // server与client之间通过 name##content 格式通信传递用户名
+      const [ name, msg ] = input.split('##')
+
+      if(msg.startsWith('LOGIN')) {
+        const [_, loginName] = msg.split(' ')
+        if (self.users[loginName]) {
+          conn.sendMessage(`nickname ${loginName} already in use. try again. \n`)
           return
         } else {
-          self.users[msg] = new User(msg)
-          // 删除匿名
-          delete self.users[name]
-          self.broadcast(`${msg} joined th room.`)
+          const u = new User(loginName)
+          self.users[loginName] = u
+          conn.user = u
+          self.connections[loginName]  = conn
+          self.broadcast(`system said: ${loginName} joined th room.`, loginName)
 
-          conn.sendMessage(`login succeed! start chat. \n`)
-          self.mode = Mode.CHAT
+          conn.sendMessage(`${loginName}##login succeed! start chat.`)
         }
-      } else if(self.mode === Mode.CHAT) {
+
+      } else {
         // 默认当做聊天
-        self.broadcast(msg)
+        self.broadcast(`${name} said: ${msg}`, name)
       }
     }
 
     function connectHandler(socket) {
       const userCount = Object.keys(self.users).length
+      const conn = new Connection(socket)
 
-      const name = `Anonymous-${userCount}`
-      const user = new User(name)
-      const conn = new Connection(socket, user)
-      self.connections[name]  = conn
-
-      // server与client之间通过 ##name 传递用户名
-      conn.sendMessage(`
-        welcome to node-caht!
-        ${userCount} other people are connected at this time.
-        please choose your action: LOGIN | CHAT ##${name}`)
+      conn.sendMessage(
+`welcome to node-caht!
+${userCount} other people are connected at this time.
+please login: LOGIN <name>.\r\n`)
     
       socket.setEncoding('utf8')
       socket.on('data', function(data) {
@@ -100,6 +94,11 @@ class TcpServer {
       socket.on('close', function () {
         // 如何删除 conn
         log('someone leave')
+      })
+
+      socket.on('error', function (error) {
+        // 如何删除 conn
+        log('socket error', error)
       })
     }
     return net.createServer(connectHandler)
