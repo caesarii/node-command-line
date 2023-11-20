@@ -8,80 +8,97 @@ const Mode = {
 }
 
 class User {
-  constructor(name, socket, token) {
+  constructor(name, token = '') {
     this.name = name
-    this.socket = socket
     this.token = token
   }
 }
 
-
-class TcpServer {
-  constructor() {
-    this.server = this.createServer()
-    this.socket = null
-    this.count = 0
-    this.mode = Mode.LOGIN
-    this.users = {}
+class Connection {
+  constructor(socket, user) {
+    this.socket = socket
+    this.user = user
     this.sendMessage = this.sendMessage.bind(this)
   }
-
 
   sendMessage(msg) {
     this.socket.write(`${msg} \r\n`)
   }
+}
+
+class TcpServer {
+  constructor() {
+    this.server = this.createServer()
+    this.mode = Mode.LOGIN
+    this.users = {}
+    this.connections = {}
+  }
+
+  broadcast(msg) {
+    const self = this
+    Object.keys(self.connections).forEach(u => {
+      const conn = self.connections[u]
+      conn.sendMessage(`${conn.user.name} said: ${msg} \r\n`)
+    })
+  }
 
   createServer() {
     const self = this
-    function dataHandler(data) {
+    function dataHandler(data, conn) {
       const input = data.replace(/\n|\r\n/g, '')
+      const [ msg, name ] = input.split('##')
+      log('##', msg, name)
     
-      if(input === Mode.LOGIN) {
+      if(msg === Mode.LOGIN) {
         self.mode = Mode.LOGIN
-        self.sendMessage(`please enter your nickname.`)
+        conn.sendMessage(`please enter your nickname.`)
         return
       } 
-      if(input === Mode.CHAT) {
+      if(msg === Mode.CHAT) {
         self.mode = Mode.CHAT
-        socket.write(`please start your chat.`)
+        conn.sendMessage(`please start your chat.`)
         return 
       }
   
       if(self.mode === Mode.LOGIN) {
-        if (self.users[input]) {
-          self.sendMessage(`nickname ${input} already in use. try again. \n`)
+        if (self.users[msg]) {
+          conn.sendMessage(`nickname ${msg} already in use. try again. \n`)
           return
         } else {
-          self.users[input] = self.socket
-          for (let u in self.users) {
-            self.users[u].write(`${input} joined th room. \n`)
-          }
-          self.socket.write(`login succeed! start chat. \n`)
+          self.users[msg] = new User(msg)
+          // 删除匿名
+          delete self.users[name]
+          self.broadcast(`${msg} joined th room.`)
+
+          conn.sendMessage(`login succeed! start chat. \n`)
           self.mode = Mode.CHAT
         }
       } else if(self.mode === Mode.CHAT) {
         // 默认当做聊天
-        for (let u in self.users) {
-          self.users[u].write(`someone said: ${input}. \n`)
-        }
+        self.broadcast(msg)
       }
     }
 
     function connectHandler(socket) {
-      self.socket = socket
+      const userCount = Object.keys(self.users).length
 
-      socket.write(`
+      const name = `Anonymous-${userCount}`
+      const user = new User(name)
+      const conn = new Connection(socket, user)
+      self.connections[name]  = conn
+
+      // server与client之间通过 ##name 传递用户名
+      conn.sendMessage(`
         welcome to node-caht!
-        ${this.count} other people are connected at this time.
-        please choose your action: LOGIN | CHAT \n`)
-      this.count ++
+        ${userCount} other people are connected at this time.
+        please choose your action: LOGIN | CHAT ##${name}`)
     
       socket.setEncoding('utf8')
-      
-      socket.on('data', dataHandler)
-
+      socket.on('data', function(data) {
+        dataHandler(data, conn)
+      })
       socket.on('close', function () {
-        this.count --
+        // 如何删除 conn
         log('someone leave')
       })
     }
@@ -93,9 +110,6 @@ class TcpServer {
       log('server listenning on *:3000')
     })
   }
-
-
-  
 }
 
 function __main() {

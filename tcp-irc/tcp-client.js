@@ -1,24 +1,47 @@
 const net = require('net')
 
-const socket = net.connect(3000, '127.0.0.1')
 
 const log = console.log
 
-socket.setEncoding('utf8')
+class Client {
+  constructor() {
+    this.socket = this.connect()
+    this.name = 'Anonymous'
+  }
 
-socket.on('connect', function() {
-  log('connect succeed')
+  connect() {
+    const self = this
+    const socket = net.connect(3000, '127.0.0.1')
 
-  process.stdin.pipe(socket)
-  socket.pipe(process.stdout)
-  process.stdin.resume()
-})
+    socket.setEncoding('utf8')
 
-// 通过data事件手动读取或写入数据,等价于上面两个pipe
-// socket.on('data', function(data) {
-//   process.stdout.write(data)
-// })
-// process.stdin.on('data', function(data) {
-//   socket.write(data)
-// })
+    socket.on('connect', function() {
+      log('connect succeed')
+
+      socket.on('data', function(data) {
+        const [ msg, name ] = data.split('##')
+        if (name && self.name.startsWith('Anonymous')) {
+          self.name = name
+        }
+        process.stdout.write(msg)
+        process.stdin.resume()
+      })
+      process.stdin.on('data', function(data) {
+        // log('name', self.name)
+        socket.write(`${data}##${self.name}`)
+      })
+    })
+
+    return socket
+
+  }
+}
+
+function __main() {
+  new Client()
+}
+
+__main()
+
+
 
