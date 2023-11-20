@@ -16,7 +16,7 @@ class Client {
     socket.setEncoding('utf8')
 
     socket.on('connect', function() {
-      log('connect succeed')
+      process.stdout.write('connect succeed\r\n')
 
       socket.on('data', function(data) {
         let msg = data
