@@ -15,7 +15,6 @@ class Client:
     try: 
         
       while True:
-        # cSocket.send(bytes(data, 'utf-8'))
         res = cSocket.recv(1024)
         if not res:
           break
