@@ -2,38 +2,39 @@ from socket import *
 import sys
 
 class Client:
+  name = ''
+  sock = None
   def __init__(self):
-    self.socket = self.connect()
-    self.name = ''
+    self.connect()
 
   def connect(self):
     cSocket = socket(AF_INET, SOCK_STREAM)
-    cSocket.connect(('127.0.0.1', 3001))
+    cSocket.connect(('127.0.0.1', 3000))
     sys.stdout.write('connect succeed\r\n')
-    while True:
-      # cSocket.send(bytes(data, 'utf-8'))
-      data = cSocket.recv(1024)
-      if not data:
-        break
-      data = data.decode('utf-8')
 
-      # print('heqy res', data)
-      if data.find('##') >= 0:
-        [name, msg] = data.split('##')
-        if name:
-          self.name = name
+    try: 
         
+      while True:
+        # cSocket.send(bytes(data, 'utf-8'))
+        res = cSocket.recv(1024)
+        if not res:
+          break
+        msg = res.decode('utf-8')
+
+        print('msg', msg)
+        if msg.find('##') >= 0:
+          [name, msg] = msg.split('##')
+          if name:
+            self.name = name
+          
         sys.stdout.write(msg)
 
-      input = sys.stdin.readline()
-      cSocket.send(bytes(input, 'utf-8'))
-
-
-    return cSocket
-
+        input = sys.stdin.readline()
+        cSocket.send(bytes('{0}##{1}'.format(self.name, input), 'utf-8'))
+    except KeyboardInterrupt:
+        cSocket.close()
   
 def __main():
-  c = Client()
-  c.connect
+  Client()
 
 __main()

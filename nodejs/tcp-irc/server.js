@@ -47,7 +47,7 @@ class TcpServer {
 
   createServer() {
     const self = this
-    function dataHandler(data, conn) {
+    function chatHandler(data, conn) {
       const input = data.replace(/\n|\r\n/g, '')
       // server与client之间通过 name##content 格式通信传递用户名
       const [ name, msg ] = input.split('##')
@@ -84,7 +84,7 @@ please login: LOGIN <name>.\r\n`)
     
       socket.setEncoding('utf8')
       socket.on('data', function(data) {
-        dataHandler(data, conn)
+        chatHandler(data, conn)
       })
       socket.on('close', function () {
         // 如何删除 conn

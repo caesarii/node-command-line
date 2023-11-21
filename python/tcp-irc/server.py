@@ -23,24 +23,18 @@ class Server:
   def broadcast(self, msg, name):
     for (key, conn)  in self.connections.items():
       #  广播不包含当前用户
-      if conn.user.name != name:
-        conn.sendMessage(msg)
+      # if conn.user.name != name:
+      conn.sendMessage(msg)
   
   def createServer(self):
     server = socket(AF_INET, SOCK_STREAM)
-    server.bind(('127.0.0.1', 3001))
+    server.bind(('127.0.0.1', 3000))
     server.listen(5)
 
-    try: 
-      while True:
-        print('server listening on 127.0.0.1:3000')
-        (tSocket, addr) = server.accept()
-        conn = Connection(tSocket)
-        conn.sendMessage('welcome to node-caht! \r\n ${userCount} other people are connected at this time. \r\n please login: LOGIN <name>.\r\n')
-        print('new connection')
 
+    def handleChat(conn):
         while True:
-          req = tSocket.recv(1024)
+          req = conn.sock.recv(1024)
           req = req.decode('utf-8')
           req = re.sub(r'\n|\r\n/', '', req)
           print('req', req)
@@ -48,6 +42,8 @@ class Server:
             break
           # server与client之间通过 name##content 格式通信传递用户名
           msg = req
+          # if req.startswith('##') >= 0:
+          #   conn.sendMessage('please login')
           if req.find('##') >= 0:
             [name, msg] = req.split('##')
 
@@ -65,10 +61,27 @@ class Server:
               self.broadcast('system said: {0} joined th room.'.format(loginName), loginName)
 
               conn.sendMessage('{0}##login succeed! start chat.'.format(loginName))
+          else:
+             self.broadcast('${0} said: ${1}'.format(name, msg), name)
 
+    def handleConnect():
+      while True:
+        print('server listening on 127.0.0.1:3000')
+        (tSocket, addr) = server.accept()
+        conn = Connection(tSocket)
+        conn.sendMessage('welcome to node-caht! \r\n ${userCount} other people are connected at this time. \r\n please login: LOGIN <name>.\r\n')
+        print('new connection')
+
+        handleChat(conn)
+
+
+    try: 
+      handleConnect()
+      
+    except KeyboardInterrupt:
+      server.close()
     finally:
       # print('error', TypeError)
-      tSocket.close()
       server.close()
 
 def __main():
