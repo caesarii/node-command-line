@@ -2,11 +2,6 @@ const net = require('net')
 
 const log = console.log
 
-const Mode = {
-  LOGIN: 'LOGIN',
-  CHAT: 'CHAT'
-}
-
 class User {
   constructor(name, token = '') {
     this.name = name
