@@ -29,10 +29,9 @@ const CommandType = {
 
 function toBase64(str) {
   const r = Buffer.from(str, 'utf8').toString('base64');
+  log('r', r)
   return r;
 }
-
-
 
 class Mail {
   constructor() {
@@ -74,43 +73,45 @@ class Mail {
 
     let res = await getStatus();
     assert(res.code === '220');
+
     sendCommand(`${CommandType.EHLO} Heqy`);
-  
     res = await this.getStatus();
     assert(res.code === '250');
+
+
     sendCommand(CommandType.AUTH_LOGIN);
-  
     res = await this.getStatus();
     assert(res.code === '334');
+
     sendCommand(toBase64(config.fromAddress));
-  
     res = await this.getStatus();
     assert(res.code === '334');
+
     sendCommand(toBase64(config.authcode));
-  
     res = await this.getStatus();
     assert(res.code === '235');
+
     sendCommand(`${CommandType.MAIL_FROM}:<${config.fromAddress}>`);
-  
     res = await this.getStatus();
     assert(res.code === '250');
+
     sendCommand(`${CommandType.RCPT_TO}:<${config.toAddress}>`);
-  
     res = await this.getStatus();
     assert(res.code === '250');
+
     sendCommand(CommandType.DATA);
-  
     res = await this.getStatus();
     assert(res.code === '354');
+
     sendMailContent(
       config.subject,
       config.fromAddress,
       config.toAddress,
       'hello world'
     );
-  
     res = await this.getStatus();
     assert(res.code === '250');
+
     sendCommand(CommandType.QUIT);
   }
 
@@ -160,12 +161,12 @@ class Mail {
 async function __main() {
   const mail = new Mail()
   // 发送邮件
-  // await mail.createConnect( 'smtp.163.com', 25)
-  // await mail.send();
+  await mail.createConnect( 'smtp.163.com', 25)
+  await mail.send();
 
   // 接收邮件
-  await mail.createConnect('pop.163.com','110')
-  await mail.receive()
+  // await mail.createConnect('pop.163.com','110')
+  // await mail.receive()
 }
 
 __main();
