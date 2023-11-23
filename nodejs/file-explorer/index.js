@@ -49,14 +49,17 @@ function handleInput () {
   })
 }
 
-function __main() {
-
+function explorer() {
   // node index.js ./
   const dir = process.argv[2]
 
-  handleInput(dir)
-
   list(dir)
+
+  handleInput(dir)
+}
+
+function __main() {
+  explorer()
 }
 
 
