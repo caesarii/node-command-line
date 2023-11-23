@@ -131,22 +131,21 @@ class Mail {
 
     let res = await getStatus();
     assert(res.code === '+OK');
+
     sendCommand(`USER ${config.fromAddress}`);
-
-    
     res = await getStatus();
     assert(res.code === '+OK');
+
+
     sendCommand(`PASS ${config.authcode}`);
-
-   
     res = await getStatus();
     assert(res.code === '+OK');
+
     sendCommand(`STAT`);
-
     res = await getStatus();
     assert(res.code === '+OK');
-    sendCommand(`RETR 6`);
 
+    sendCommand(`RETR 6`);
     const { response } = await getStatus();
     this.saveMail(response)
   }

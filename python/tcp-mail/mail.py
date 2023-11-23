@@ -110,18 +110,43 @@ class Mail:
 
     self.sendCommand(CommandType['QUIT'])
 
+  def receive(self):
+    ( code, res ) = self.getResponse()
+    assert code == '+OK', '没准备好'
+
+    self.sendCommand('{0} {1}'.format(CommandType['USER'], config['fromAddress']))
+    ( code, res ) = self.getResponse()
+    assert code == '+OK', 'USER failed'
+
+    self.sendCommand('{0} {1}'.format(CommandType['PASS'], config['authcode']))
+    ( code, res ) = self.getResponse()
+    assert code == '+OK', 'PASS failed'
+
+
+    self.sendCommand(CommandType['STAT'])
+    ( code, res ) = self.getResponse()
+    assert code == '+OK', 'STAT failed'
+
+
+    self.sendCommand('{0} 6'.format(CommandType['RETR']))
+    ( code, res ) = self.getResponse()
+    self.saveMail(res)
+
+  def saveMail(self, response):
+    output = open('mail.html', 'w')
+    output.write(response)
 
 def __main():
   try:
 
     mail = Mail()
     # 发送邮件
-    mail.createConnect( 'smtp.163.com', 25)
-    mail.send();
+    # mail.createConnect( 'smtp.163.com', 25)
+    # mail.send();
 
     # 接收邮件
-    # mail.createConnect('pop.163.com','110')
-    # mail.receive()
+    mail.createConnect('pop.163.com', 110)
+    mail.receive()
   except:
     print(traceback.format_exc())
 
