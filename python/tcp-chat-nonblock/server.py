@@ -3,6 +3,14 @@ import re
 import traceback
 from time import ctime
 
+
+def parseReq(req):
+  req = re.sub(r'\n|\r\n/', '', req.decode())
+  # print('req:', req)
+  (name, msg) = ('', req)
+  if msg.find('##') >= 0:
+    [name, msg] = msg.split('##')
+  return (name, msg)
 class Connection:
   sock = None
   user = None
@@ -15,7 +23,11 @@ class Connection:
     self.sock.send(bytes('{0} \r\n'.format(msg), 'utf-8'))
 
   def receive(self):
-   return self.sock.recv(1024)
+    try:
+      return self.sock.recv(1024)
+    except:
+      # print('conn error', traceback.format_exc())
+      pass
 
   def close(self):
     self.sock.close()
@@ -57,11 +69,27 @@ class Server:
       self.users[loginName] = u
       conn.user = u
       conn.send('{0}##login succeed! start chat.'.format(loginName))
+
   
+  def sendRes(self, conn, name, msg):
+    if msg == 'QUIT':
+      self.quit(conn)
+    elif name:
+      # 已登录
+      if msg:
+        self.broadcast('{0} said: {1}'.format(name, msg), name)
+    elif msg.startswith('LOGIN'):
+        # 登录
+        [_, loginName] = msg.split(' ')
+        self.login(loginName, conn)
+    else:
+      # 未登录
+      print('未登录')
+    
   def createServer(self):
     server = socket(AF_INET, SOCK_STREAM)
     server.setblocking(False)
-    server.bind(('127.0.0.1', 3001))
+    server.bind(('127.0.0.1', 3000))
     server.listen(5)
     print('listen')
 
@@ -77,35 +105,14 @@ class Server:
           pass
 
         for conn in self.connects:
-            conn.greeting()
-            req = ''
-            try:
-              req = conn.receive()
-            except:
-              # print('conn error', traceback.format_exc())
-              pass
-
-            if not req:
-              continue
-            req = re.sub(r'\n|\r\n/', '', req.decode())
-            # print('req:', req)
-            (name, msg) = ('', req)
-            if msg.find('##') >= 0:
-              [name, msg] = msg.split('##')
-
-            if msg == 'QUIT':
-              self.quit(conn)
-            elif name:
-              # 已登录
-              if msg:
-                self.broadcast('{0} said: {1}'.format(name, msg), name)
-            elif msg.startswith('LOGIN'):
-                # 登录
-                [_, loginName] = msg.split(' ')
-                self.login(loginName, conn)
-            else:
-              # 未登录
-              print('未登录')
+          conn.greeting()
+          req = conn.receive()
+          
+          if not req:
+            continue
+          print('req', req)
+          (name, msg) = parseReq(req)
+          self.sendRes(conn, name, msg)
     except:
         print('client error', traceback.format_exc())
         sock.close()
