@@ -1,2 +1,3 @@
 */node_modules/
 tcp-http/client/response/
+rust/*/target/

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      function vdom() {
+        return {
+          tag: "div",
+          props: {
+            onClick: () => {
+              console.log("hello");
+            },
+          },
+          children: [
+            {
+              tag: "span",
+              children: "LOREM LOREM",
+            },
+          ],
+        };
+      }
+      function renderer(vnode, container) {
+        const el = document.createElement(vnode.tag);
+        for (let prop in vnode.props) {
+          if (prop.startsWith("on")) {
+            const eventname = prop.slice(2).toLocaleLowerCase();
+            const callback = vnode.props[prop];
+            el.addEventListener(eventname, callback);
+          }
+        }
+
+        if (typeof vnode.children === "string") {
+          el.appendChild(document.createTextNode(vnode.children));
+        } else if (Array.isArray(vnode.children)) {
+          vnode.children.forEach((child) => renderer(child, el));
+        }
+
+        container.appendChild(el);
+      }
+
+      function __main() {
+        const vnode = vdom();
+        renderer(vnode, document.body);
+      }
+
+      __main();
+    </script>
+  </body>
+</html>
