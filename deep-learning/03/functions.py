@@ -26,8 +26,6 @@ def draw_sigmoid():
   plt.show()
 
 
-
-
 def relu(x):
   return np.maximum(0, x)
 
